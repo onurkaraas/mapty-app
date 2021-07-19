@@ -101,16 +101,28 @@ class App {
 
   _newWorkout(e) {
     e.preventDefault();
-    inputDistance.value =
-      inputDuration.value =
-      inputCadence.value =
-      inputElevation.value =
-        '';
 
+    //get data from form
+    const type = inputType.value;
+    const distance = +inputDistance.value;
+    const duration = +inputDuration.value;
+
+    //if workout run create run project
+    if (type === 'running') {
+      //check if data is valid
+      const cadence = +inputCadence.value;
+    }
+
+    //if workout cycling create cycling
+    if (type === 'running') {
+      const elevation = +inputElevation.value;
+    }
+
+    //add new obj to workout array
+
+    //render workout on map as marker
     const { lat, lng } = this.#mapEvent.latlng;
-
     L.marker([lat, lng])
-
       .addTo(this.#map)
       .bindPopup(
         L.popup({
@@ -123,6 +135,14 @@ class App {
       )
       .setPopupContent('Workout')
       .openPopup();
+    //render workout on list
+
+    //hide form + clear input fields
+    inputDistance.value =
+      inputDuration.value =
+      inputCadence.value =
+      inputElevation.value =
+        '';
   }
 }
 

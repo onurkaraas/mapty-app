@@ -85,6 +85,7 @@ class App {
 
     form.addEventListener('submit', this._newWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationField);
+    containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
   }
 
   _getPosition() {
@@ -118,6 +119,17 @@ class App {
     this.#mapEvent = mapE;
     form.classList.remove('hidden');
     inputDistance.focus();
+  }
+
+  _hideForm() {
+    inputDistance.value =
+      inputDuration.value =
+      inputCadence.value =
+      inputElevation.value =
+        '';
+    form.style.display = 'none';
+    form.classList.add('hidden');
+    setTimeout(() => (form.style.display = 'grid'), 1000);
   }
 
   _toggleElevationField() {
@@ -175,7 +187,7 @@ class App {
     this._renderWorkout(workout);
 
     //hide form + clear input fields
-    THIS._;
+    this._hideForm();
   }
   _renderWorkoutMarker(workout) {
     L.marker(workout.coords)
@@ -189,7 +201,12 @@ class App {
           className: `${workout.type}-popup`,
         })
       )
-      .setPopupContent('workout')
+      .setPopupContent(
+        `              ${workout.type === 'running' ? '🏃' : '🚴‍'} ${
+          workout.description
+        }
+`
+      )
       .openPopup();
   }
   _renderWorkout(workout) {
@@ -221,8 +238,12 @@ class App {
             <span class="workout__value">${workout.cadence}</span>
             <span class="workout__unit">spm</span>
           </div>
+
+
+
         </li>
 `;
+
     if (workout.type === 'cycling')
       html += ` 
           <div class="workout__details">
@@ -238,6 +259,17 @@ class App {
         </li>`;
 
     form.insertAdjacentHTML('afterend', html);
+  }
+  _moveToPopup(e) {
+    const workoutEl = e.target.closest('.workouts');
+    console.log(workoutEl);
+
+    if (!workoutEl) return;
+
+    const workout = this.#workouts.find(
+      work => work.id === workoutEl.dataset.id
+    );
+    console.log(workout);
   }
 }
 

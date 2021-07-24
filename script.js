@@ -1,16 +1,9 @@
 'use strict';
-
-const form = document.querySelector('.form');
-const containerWorkouts = document.querySelector('.workouts');
-const inputType = document.querySelector('.form__input--type');
-const inputDistance = document.querySelector('.form__input--distance');
-const inputDuration = document.querySelector('.form__input--duration');
-const inputCadence = document.querySelector('.form__input--cadence');
-const inputElevation = document.querySelector('.form__input--elevation');
-
 class Workout {
   date = new Date();
   id = (new Date() + '').slice(-10);
+  clicks = 0;
+
   constructor(coords, distance, duration) {
     this.coords = coords;
     this.distance = distance; //in km
@@ -35,6 +28,9 @@ class Workout {
     this.description = `${this.type[0].toUpperCase()}${this.type.slice(1)} on ${
       months[this.date.getMonth()]
     } ${this.date.getDate()}`;
+  }
+  click() {
+    this.clicks++;
   }
 }
 class Running extends Workout {
@@ -68,20 +64,30 @@ class Cycling extends Workout {
     return this.speed;
   }
 }
-let map, mapEvent;
+
+const form = document.querySelector('.form');
+const containerWorkouts = document.querySelector('.workouts');
+const inputType = document.querySelector('.form__input--type');
+const inputDistance = document.querySelector('.form__input--distance');
+const inputDuration = document.querySelector('.form__input--duration');
+const inputCadence = document.querySelector('.form__input--cadence');
+const inputElevation = document.querySelector('.form__input--elevation');
 
 //const run1 = new Running([39, 12], 5.2, 24, 178);
 //const cycling1 = new Cycling([39, 12], 27, 95, 523);
 //console.log(run1, cycling1);
 
-function f() {}
 //Architecture
 class App {
   #map;
+  #mapZoomLevel = 13;
   #mapEvent;
   #workouts = [];
   constructor() {
     this._getPosition();
+    //get data local st
+    this._getLocalStorage();
+    //attach event handlers
 
     form.addEventListener('submit', this._newWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationField);
@@ -105,7 +111,7 @@ class App {
 
     const coords = [latitude, longitude];
 
-    this.#map = L.map('map').setView(coords, 13);
+    this.#map = L.map('map').setView(coords, this.#mapZoomLevel);
 
     L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
       attribution:
@@ -182,12 +188,14 @@ class App {
 
     //render workout on map as marker
     this._renderWorkoutMarker(workout);
-
     //render workout on list
     this._renderWorkout(workout);
 
     //hide form + clear input fields
     this._hideForm();
+
+    //set local storage to all workouts
+    this._setLocalStorage();
   }
   _renderWorkoutMarker(workout) {
     L.marker(workout.coords)
@@ -202,10 +210,7 @@ class App {
         })
       )
       .setPopupContent(
-        `              ${workout.type === 'running' ? '🏃' : '🚴‍'} ${
-          workout.description
-        }
-`
+        `${workout.type === 'running' ? '🏃‍♂️' : '🚴‍♀️'} ${workout.description}`
       )
       .openPopup();
   }
@@ -261,15 +266,40 @@ class App {
     form.insertAdjacentHTML('afterend', html);
   }
   _moveToPopup(e) {
-    const workoutEl = e.target.closest('.workouts');
-    console.log(workoutEl);
+    // BUGFIX: When we click on a workout before the map has loaded, we get an error. But there is an easy fix:
+    if (!this.#map) return;
+
+    const workoutEl = e.target.closest('.workout');
 
     if (!workoutEl) return;
 
     const workout = this.#workouts.find(
       work => work.id === workoutEl.dataset.id
     );
-    console.log(workout);
+
+    this.#map.setView(workout.coords, this.#mapZoomLevel, {
+      animate: true,
+      pan: {
+        duration: 1,
+      },
+    });
+
+    // using the public interface
+    // workout.click();
+  }
+  _setLocalStorage() {
+    localStorage.setItem('workouts', JSON.stringify(this.#workouts));
+  }
+  _getLocalStorage() {
+    const data = JSON.parse(localStorage.getItem('workouts'));
+    console.log(data);
+
+    if (!data) return;
+    this.#workouts = data;
+
+    this.#workouts.forEach(work => {
+      this._renderWorkout(work);
+    });
   }
 }
 
